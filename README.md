@@ -173,7 +173,17 @@ enterprise-rag/
 - [ ] 用 k6 重做压测，分出服务端与客户端开销
 - [ ] 多轮会话与追问改写（生产栈设计里已有，演示版未实现）
 
-## 十一、许可
+## 十一、发布到自己的 GitHub
+
+仓库自带一键推送脚本（会校验 token、自动创建远程仓库、推送并记住凭证）：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\push.ps1
+```
+
+或 Windows 下直接双击 `tools\push.bat`。需要一个 Personal Access Token（classic 勾 `repo`，或 fine-grained 勾 `Contents: Read and write`）。token 只在这个进程内存里，不写进 `.git/config`；成功后存入 Windows 凭据管理器，清除用 `cmdkey /delete:git:https://github.com`。
+
+## 十二、许可
 
 MIT。示例语料是虚构的项目自述，不含任何真实业务数据.
 
