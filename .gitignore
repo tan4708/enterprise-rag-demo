@@ -1,0 +1,16 @@
+# build output
+demo/out/
+*.class
+
+# runtime artifacts
+demo/server.log
+demo/server.err
+demo/data/docs.tsv
+loadtest/loadtest_result.json
+
+# local tooling
+.edge-profile*/
+.edge-profile*/**
+*.tmp
+Thumbs.db
+.DS_Store

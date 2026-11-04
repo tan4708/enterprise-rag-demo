@@ -1,0 +1,31 @@
+[health] 200 {"status":"ok","uptimeMs":3975.0000,"version":"demo-1.0"}
+[stats] 200 {"docs":"6","chunks":"8","vocab":"660","avgChunkLen":145.1250,"embedding":"hash-projection-512d","retriever":"bm25+vector+rrf(k=60)","uptimeMs":4002.0000}
+[docs] count=6
+   - 1 项目简介 · 企业知识库 RAG 问答系统 1 chunks 166 chars
+   - 2 技术栈与架构 · 七个容器 1 chunks 250 chars
+   - 3 部署与运维 · 一键启动 1 chunks 330 chars
+   - 4 检索参数与调优 · RRF 融合 1 chunks 166 chars
+   - 5 二次开发记录 · 我改了什么 1 chunks 142 chars
+   - 6 常见问题 FAQ · 检索链路与部署 3 chunks 936 chars
+[search] tookUs=2472.0 wall=19.6ms hits=5
+   rank bm25=1 vec=1 fused=0.0328 bm25=8.821 cos=0.251 cov=0.764 | 常见问题 FAQ · 检索链路与部署
+   rank bm25=2 vec=2 fused=0.0323 bm25=2.837 cos=0.194 cov=0.180 | 常见问题 FAQ · 检索链路与部署
+   rank bm25=3 vec=3 fused=0.0317 bm25=1.937 cos=0.136 cov=0.180 | 常见问题 FAQ · 检索链路与部署
+[ask] wall=14.5ms refused=False cites=3
+   answer: 根据知识库：第一步做查询改写，把口语化的问题补全成检索友好的表述 [1] 第二步双路并行召回，语义路走 pgvector 的 HNSW 索引取前 20 条，关键词路走 Elasticsearch 的 IK 分词取前 20 条 [2] 第三步用 RRF 融合两路排名，常数 k 取 60，把两路的倒数排名相加得到融合分 [3]
+   cite[1] 常见问题 FAQ · 检索链路与部署 score=0.0328
+   cite[2] 常见问题 FAQ · 检索链路与部署 score=0.0328
+   cite[3] 常见问题 FAQ · 检索链路与部署 score=0.0328
+[refuse] wall=1.8ms refused=True reason=证据不足：Top1 证据强度 0.546 < 1.800
+   answer: 当前知识库中没有检索到足够支撑该问题的证据，已拒答（避免无依据生成）。可以换个问法，或先在左侧上传相关文档。
+[sse] done frame: {"tookMs":301.0000,"refused":false}
+[sse] events={'meta': 1, 'delta': 19, 'done': 1} firstByte=2.4ms total=303.2ms
+[sse] answer: 根据知识库：Nginx 负责静态资源与反向代理，Vue3 前端负责知识库管理与对话页 [1] Spring Boot 3 后端负责解析切片与检索编排，运行在 Java 21 上 [2] PostgreSQL 加 pgvector 存向量，Elasticsearch 加 IK 存倒排索引 [3]
+[matrix] 问题 -> Top1 文档 | 覆盖率 | 是否作答
+   检索链路是怎么设计的？            -> 常见问题 FAQ · 检索链路与部署 cov=1.000 answered=True  OK
+   一共有哪七个容器，各自负责什么？       -> 常见问题 FAQ · 检索链路与部署 cov=1.000 answered=True  OK
+   部署时最容易踩的坑是什么？          -> 常见问题 FAQ · 检索链路与部署 cov=1.000 answered=True  OK
+   切片大小和重叠是多少？            -> 常见问题 FAQ · 检索链路与部署 cov=1.000 answered=True  OK
+   如何训练一个多模态大模型？          -> 技术栈与架构 · 七个容器      cov=0.012 answered=False OK
+   今天北京的天气怎么样？            -> 常见问题 FAQ · 检索链路与部署 cov=0.072 answered=False OK
+[matrix] pass 6/6
