@@ -14,3 +14,5 @@ loadtest/loadtest_result.json
 *.tmp
 Thumbs.db
 .DS_Store
+__pycache__/
+*.pyc

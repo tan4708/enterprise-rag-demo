@@ -1,5 +1,7 @@
 # enterprise-rag · 企业知识库 RAG 问答系统（可运行演示版）
 
+**BM25 + 向量双路召回 · RRF 融合 · 证据约束作答 · 证据不足即拒答 · SSE 流式输出**
+
 > 上传文档 → 解析切片 → 混合检索（BM25 + 向量）→ RRF 融合 → 证据约束作答 → 答案带 `[n]` 引用，证据不足直接拒答。
 > **零第三方依赖**：只需要 JDK 17，`javac` + `java` 两条命令就能跑起来，不需要 Docker、不需要 API Key。
 
@@ -190,6 +192,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\push.ps1
 ```
 
 或 Windows 下直接双击 `tools\push.bat`。需要一个 Personal Access Token（classic 勾 `repo`，或 fine-grained 勾 `Contents: Read and write`）。token 只在这个进程内存里，不写进 `.git/config`；成功后存入 Windows 凭据管理器，清除用 `cmdkey /delete:git:https://github.com`。
+
+脚本同时会把仓库的 About 配好，不用手填：描述取 `tools/gh_bootstrap.py` 里的 `DESCRIPTION`，topics 取 `TOPICS`（`rag` / `hybrid-search` / `bm25` / `rrf` / `vector-search` / `sse` / `java` …）。仓库已存在时也会被纠正，只警告不中断推送。
 
 ## 十二、许可
 
