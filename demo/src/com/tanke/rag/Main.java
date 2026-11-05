@@ -150,7 +150,7 @@ public final class Main {
         List<Index.Hit> hits = store.index().search(q, Index.RECALL_K);
         List<Index.Hit> top = hits.size() > 5 ? hits.subList(0, 5) : hits;
         Answer.Result r = Answer.build(q, top, store.index());
-        long ms = (System.nanoTime() - t0) / 1_000_000;
+        double ms = (System.nanoTime() - t0) / 1_000_000.0;
         StringBuilder sb = new StringBuilder("{");
         sb.append(Json.kv("answer", r.text)).append(",")
                 .append(Json.kvBool("refused", r.refused)).append(",")
@@ -161,6 +161,8 @@ public final class Main {
             Answer.Citation c = r.citations.get(i);
             if (i > 0) sb.append(',');
             sb.append("{").append(Json.kv("index", String.valueOf(c.index))).append(",")
+                    .append(Json.kv("docId", String.valueOf(c.docId))).append(",")
+                    .append(Json.kv("seq", String.valueOf(c.seq + 1))).append(",")
                     .append(Json.kv("title", c.title)).append(",")
                     .append(Json.kv("snippet", c.snippet)).append(",")
                     .append(Json.kvNum("score", c.score)).append("}");
@@ -216,7 +218,7 @@ public final class Main {
                     break;
                 }
             }
-            long ms = (System.nanoTime() - t0) / 1_000_000;
+            double ms = (System.nanoTime() - t0) / 1_000_000.0;
             sse(os, "done", "{" + Json.kvNum("tookMs", ms) + ","
                     + Json.kvBool("refused", r.refused) + "}");
             os.flush();

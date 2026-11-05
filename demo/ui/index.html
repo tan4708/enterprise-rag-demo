@@ -231,7 +231,7 @@ async function ask(q){
         let obj; try { obj = JSON.parse(data); } catch(e){ continue; }
         if (ev === "meta"){
           if (String(obj.refused) === "true"){
-            body.innerHTML = `<div class="refused">证据不足，已拒答：${esc(obj.reason || "未检索到相关内容")}</div>`;
+            body.innerHTML = `<div class="refused">已拒答 · ${esc(obj.reason || "未检索到足够证据")}</div>`;
           }
           if (obj.citations && obj.citations.length) renderCites(bot, obj.citations);
         } else if (ev === "delta"){
@@ -281,10 +281,42 @@ $("btn-add").onclick = async () => {
 
 loadStats(); loadDocs();
 
-// 截图/演示模式：自动跑一次问答，便于生成 README 截图
+// 截图/演示模式
+//   ?demo=1        —— 自动走完一次 SSE 流式问答（现场演示用）
+//   ?demo=static   —— 一次性取回完整答案再渲染（截图用：不受截图时刻截断影响）
 const params = new URLSearchParams(location.search);
+const demoQ = params.get("q") || "检索链路是怎么设计的？";
+
+async function askOnce(q){
+  const empty = document.querySelector(".empty");
+  if (empty) empty.remove();
+  addUser(q);
+  const bot = addBot();
+  const body = bot.querySelector(".body");
+  try{
+    const res = await fetch("/api/ask", {
+      method: "POST",
+      headers: {"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
+      body: "q=" + encodeURIComponent(q)
+    });
+    const d = await res.json();
+    if (d.refused){
+      body.innerHTML = `<div class="refused">已拒答 · ${esc(d.reason || "未检索到足够证据")}</div>`;
+    } else {
+      body.textContent = d.answer || "";
+    }
+    if (d.citations && d.citations.length) renderCites(bot, d.citations);
+    $("meta-line").textContent = `本轮耗时 ${d.tookMs} ms · 证据约束作答 · 引用 ${(d.citations || []).length} 条`;
+    scroll();
+  }catch(e){
+    body.innerHTML = `<div class="refused">请求失败：${esc(e.message)}</div>`;
+  }
+}
+
 if (params.get("demo") === "1"){
-  setTimeout(() => ask(params.get("q") || "检索链路是怎么设计的？"), 450);
+  setTimeout(() => ask(demoQ), 450);
+} else if (params.get("demo") === "static"){
+  setTimeout(() => askOnce(demoQ), 450);
 }
 </script>
 </body>

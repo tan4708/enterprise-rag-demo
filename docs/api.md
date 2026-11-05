@@ -122,12 +122,14 @@
   "answer": "根据知识库：语义召回与关键词召回各取前 20 条候选，使用 RRF 融合… [1]",
   "refused": false,
   "reason": "",
-  "tookMs": 3,
+  "tookMs": 0.6842,
   "citations": [
-    { "index": 1, "title": "检索参数与调优 · RRF 融合", "snippet": "…", "score": 0.0328 }
+    { "index": 1, "docId": 4, "seq": 1, "title": "检索参数与调优 · RRF 融合", "snippet": "…", "score": 0.0328 }
   ]
 }
 ```
+
+`citations[]` 与 SSE `meta` 帧的引用结构完全一致（`index` / `docId` / `seq` / `title` / `snippet` / `score`），因此同一套引用卡片渲染代码可以同时服务流式与非流式两条路径。`tookMs` 为**小数毫秒**（本机检索+作答常在 1ms 以内，整数会退化成 0，故保留 4 位小数）。
 
 `"refused":true` 时 `citations` 为空、`reason` 给出拒答原因（如"证据不足：Top1 证据强度 0.546 < 1.800"，两种原因见 4.3）。**拒答是正常返回而非错误**，HTTP 状态仍为 200——前端要据此渲染提示，而不是当作失败重试。`refused` 是标准 JSON 布尔，脚本与前端直接用真值判断即可。
 
