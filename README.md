@@ -1,31 +1,110 @@
-# enterprise-rag · 企业知识库 RAG 问答系统（可运行演示版）
+<h1 align="center">enterprise-rag</h1>
 
-**BM25 + 向量双路召回 · RRF 融合 · 证据约束作答 · 证据不足即拒答 · SSE 流式输出**
+<p align="center"><b>企业知识库 RAG 问答系统 · 可运行演示版</b></p>
 
-> 上传文档 → 解析切片 → 混合检索（BM25 + 向量）→ RRF 融合 → 证据约束作答 → 答案带 `[n]` 引用，证据不足直接拒答。
-> **零第三方依赖**：只需要 JDK 17，`javac` + `java` 两条命令就能跑起来，不需要 Docker、不需要 API Key。
+<p align="center">
+  <code>JDK 17</code> <code>零第三方依赖</code> <code>BM25 + 向量双路召回</code> <code>RRF 融合</code> <code>证据约束作答</code> <code>证据不足即拒答</code> <code>SSE 流式</code>
+</p>
 
-这个仓库有两层内容：
+<p align="center">
+  上传文档 → 解析切片 → 混合检索 → RRF 融合 → 证据约束作答 → 答案带 <code>[n]</code> 引用；<br/>
+  证据不足时直接拒答并给出判据，不编答案。
+</p>
 
-| 层 | 是什么 | 在哪 |
-| --- | --- | --- |
-| **演示版（可运行）** | 用 JDK 自带 `com.sun.net.httpserver` 从零实现检索、融合、拒答、SSE 流式，前端是单文件页面 | `demo/` |
-| **生产版设计（文档）** | 七个容器的完整栈：Spring Boot 3 + Spring AI + PostgreSQL/pgvector + Elasticsearch/IK + MinIO + Ollama + Vue3 | `docs/architecture.md` 等 |
-
-这样做的原因很直接：**能力应该跑给人看**。生产栈要 Docker、要模型权重、要七套服务，任何人都能照着文档写出来，但不是任何人都能让一个 RAG 系统在本机 30 秒内起来、并且当场演示"该拒答的时候真的拒答"。所以演示版把关键链路自己实现了一遍，参数与生产版严格对齐，方便逐环节对照。
+<p align="center">
+  <a href="#快速开始"><b>30 秒跑起来 ↓</b></a> &nbsp;·&nbsp;
+  <a href="#三个值得展开的设计点">设计取舍</a> &nbsp;·&nbsp;
+  <a href="#实测数据">实测数据</a> &nbsp;·&nbsp;
+  <a href="docs/architecture.md">架构设计</a> &nbsp;·&nbsp;
+  <a href="docs/api.md">接口契约</a> &nbsp;·&nbsp;
+  <a href="docs/deploy.md">部署清单</a> &nbsp;·&nbsp;
+  <a href="docs/production.md">生产化改造</a>
+</p>
 
 ---
 
-## 一、能做什么
+## 先看效果
+
+<table>
+<tr>
+<td width="61%" align="center"><img src="docs/img/ui.png" alt="有证据时作答，答案带引用角标"></td>
+<td width="39%" align="center"><img src="docs/img/refuse.png" alt="证据不足时拒答"></td>
+</tr>
+<tr>
+<td align="center"><sub><b>有证据 → 作答</b>：答案里带 <code>[n]</code> 角标，下方列出对应的引用卡片（标题 + 原文片段）</sub></td>
+<td align="center"><sub><b>证据不足 → 拒答</b>：橙色提示框给出判据 <code>Top1 证据强度 0.546 &lt; 1.800</code>，不编答案</sub></td>
+</tr>
+</table>
+
+两张图都由 `tools/shot.bat` 对本机真实运行的服务抓取（headless Edge）。先 `tools/run.bat` 起服务，再双击 `tools/shot.bat` 可自行复现。
+
+<details>
+<summary><b>目录</b>（点击展开）</summary>
+
+- [先看效果](#先看效果)
+- [这是什么](#这是什么)
+- [快速开始](#快速开始)
+- [能做什么](#能做什么)
+- [架构](#架构)
+- [接口](#接口)
+- [三个值得展开的设计点](#三个值得展开的设计点)
+- [实测数据](#实测数据)
+- [目录结构](#目录结构)
+- [演示版 ↔ 生产版的差距](#演示版--生产版的差距)
+- [路线图](#路线图)
+- [发布到自己的 GitHub](#发布到自己的-github)
+- [许可](#许可)
+
+</details>
+
+## 这是什么
+
+这个仓库有两层内容，一层能跑、一层能读：
+
+| 层 | 是什么 | 在哪 |
+| --- | --- | --- |
+| **演示版（可运行）** | 用 JDK 自带 `com.sun.net.httpserver` 从零实现检索、融合、拒答、SSE 流式；前端是单文件页面 | `demo/` |
+| **生产版设计（文档）** | 七个容器的完整栈：Spring Boot 3 + Spring AI + PostgreSQL/pgvector + Elasticsearch/IK + MinIO + Ollama + Vue3 | [`docs/architecture.md`](docs/architecture.md) 等 |
+
+一句话：**能力应该跑给人看**。生产栈要 Docker、要模型权重、要七套服务，照着文档谁都能写出来，但不是谁都能让一个 RAG 系统在本机 30 秒内起来、并当场演示"该拒答的时候真的拒答"。所以演示版把关键链路自己实现了一遍，参数与生产版严格对齐，方便逐环节对照。
+
+| 速览 | |
+| --- | --- |
+| 运行环境 | Java（JDK 17+），仅标准库，无 Maven / Gradle 依赖 |
+| 代码规模 | 后端 6 个类 956 行；前端 1 个文件 322 行；文档 4 篇 738 行 |
+| 启动成本 | `javac` + `java` 两条命令，本机秒级起服务；不需要 Docker、不需要 API Key |
+| 自带语料 | 首次启动自动灌入 6 篇示例文档（8 个切片 / 词表 660） |
+| 可验证性 | 冒烟矩阵 6/6 + 四档并发压测，脚本与原始输出都在仓库里 |
+
+## 快速开始
+
+```bash
+# 只需要 JDK 17+，无其他依赖
+git clone https://github.com/tan4708/enterprise-rag-demo.git
+cd enterprise-rag-demo/demo
+mkdir out
+javac -encoding UTF-8 -d out src/com/tanke/rag/*.java
+java -cp out com.tanke.rag.Main 8765
+```
+
+打开 <http://127.0.0.1:8765/>：左栏是知识库（首次启动自动灌入 6 篇示例文档），右栏直接提问。
+
+Windows 下双击 `tools/run.bat` 等价于上面三步；跑一遍冒烟（7 段：健康 / 统计 / 文档 / 检索 / 问答 / 拒答 / SSE）：
+
+```bash
+python demo/smoke.py          # 结果写到 demo/smoke_result.txt
+```
+
+## 能做什么
 
 - **知识库管理**：上传 / 列出文档，切片入库，重启后从 `data/docs.tsv` 恢复
 - **混合检索**：BM25 关键词召回 + 向量语义召回，两路并行，RRF 融合排序
-- **证据约束作答**：只用检索到的片段组句，每句带 `[n]` 引用，可点开看来源
+- **证据约束作答**：只用检索到的片段组句，每句带 `[n]` 引用，可展开看来源
 - **拒答**：证据强度不足时不生成答案，明确告知"证据不足"并给出原因——这一条是 RAG 与"套壳聊天"的分界线
 - **SSE 流式输出**：`meta`（先给证据卡片）→ `delta`（正文逐段）→ `done`
 - **推荐问题**：页面内置 4 个问题，一键演示；`?demo=1` 自动提问走完整 SSE 流式（录屏用），`?demo=static` 一次性取回完整答案再渲染（截图用，不会截到半截话）
 
-## 二、架构
+## 架构
 
 ```mermaid
 flowchart LR
@@ -41,44 +120,9 @@ flowchart LR
     D[(data/docs.tsv)] --> R
 ```
 
-生产栈的同一张图（七个容器、端口、数据流、逐环节对照）见 [`docs/architecture.md`](docs/architecture.md)。
+生产栈的同一张图（七个容器、端口分配、数据流、逐环节对照）见 [`docs/architecture.md`](docs/architecture.md)。
 
-## 三、快速开始
-
-```bash
-# 需要 JDK 17+，无其他依赖
-git clone https://github.com/<你的用户名>/enterprise-rag-demo.git
-cd enterprise-rag-demo/demo
-mkdir out
-javac -encoding UTF-8 -d out src/com/tanke/rag/*.java
-java -cp out com.tanke.rag.Main 8765
-```
-
-打开 <http://127.0.0.1:8765/> ，左栏就是知识库（首次启动自动灌入 6 篇示例文档），右栏直接提问.
-
-Windows 双击 `tools/run.bat` 等价于上面三步。
-
-跑一遍冒烟（7 段：健康 / 统计 / 文档 / 检索 / 问答 / 拒答 / SSE）：
-
-```bash
-python demo/smoke.py          # 结果写到 demo/smoke_result.txt
-```
-
-## 四、界面
-
-单文件前端（`demo/ui/index.html`，无构建、无 CDN）：左栏知识库统计 + 新增文档 + 文档列表，右栏对话，答案下方是 `[n]` 引用卡片，拒答时是橙色提示框而不是假装有答案。
-
-有证据就作答，答案里带 `[n]` 角标，角标对应下方引用卡片的标题与原文片段：
-
-![对话与引用卡片](docs/img/ui.png)
-
-证据不足时直接拒答，并给出拒答依据（Top1 证据强度低于阈值），不编答案：
-
-![证据不足时拒答](docs/img/refuse.png)
-
-两张图都由 `tools/shot.bat` 对本机真实运行的服务抓取（headless Edge，`?demo=static` 一次性取回完整答案后渲染，避免截图时刻截断流式输出）：先 `tools/run.bat` 起服务，再双击 `tools/shot.bat` 可自行复现。
-
-## 五、接口
+## 接口
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
@@ -92,11 +136,11 @@ python demo/smoke.py          # 结果写到 demo/smoke_result.txt
 
 字段级契约（JSON 示例、SSE 帧、错误码）见 [`docs/api.md`](docs/api.md)。
 
-## 六、三个值得展开的设计点
+## 三个值得展开的设计点
 
 ### 1. 双路召回 + RRF，而不是"只上向量"
 
-关键词路用 BM25（`K1=1.2`、`B=0.75`），向量路用 512 维带符号哈希投影 + 余弦。两路各取 Top20，用 RRF 融合：
+关键词路用 BM25（`K1=1.2`、`B=0.75`），向量路用 512 维带符号哈希投影 + 余弦。两路各取 Top20，再用 RRF 融合：
 
 ```
 fused(d) = Σ_i 1 / (k + rank_i(d))     k = 60
@@ -123,9 +167,11 @@ fused(d) = Σ_i 1 / (k + rank_i(d))     k = 60
 - 知识库里的 `问：…答：…` 结构会被识别成 FAQ：若用户提问与某个"问"的相似度 `≥ 0.25`，就只复用那一组答案、**按原文顺序整组输出**（而不是按打分逐句挑，导致步骤 3 跑到步骤 1 前面）
 - 兜底：候选句池为空 → 拒答 `证据不足：片段与提问无有效重合`
 
-## 七、实测数据（本机，可复现）
+## 实测数据
 
-### 冒烟矩阵 6/6 通过（`demo/smoke_result.txt`）
+> 全部可在本机复现：脚本在 `demo/smoke.py`、`loadtest/loadtest.py`，原始输出在 `demo/smoke_result.txt`、`loadtest/loadtest_result.txt`。
+
+### 冒烟矩阵 6/6 通过
 
 | 提问 | Top1 文档 | 是否作答 | 判定 |
 | --- | --- | --- | --- |
@@ -138,31 +184,31 @@ fused(d) = Σ_i 1 / (k + rank_i(d))     k = 60
 
 索引规模：6 篇文档 / 8 个切片 / 词表 660 / 平均切片 145 字。SSE：`meta`=1、`delta`=19、`done`=1，首字节 2.4ms，全程 303ms。
 
-### 压测（`loadtest/loadtest.py`，python 多线程客户端，含客户端开销）
+### 压测（python 多线程客户端，含客户端开销）
 
 | 接口 | 并发 | RPS | P50 | P95 | P99 | 错误 |
 | --- | --- | --- | --- | --- | --- | --- |
 | `/api/search` | 16 | 3827.1 | 3.4ms | 5.8ms | 6.6ms | 0 |
 | `/api/ask` | 8 | 4138.3 | 1.8ms | 2.5ms | 2.9ms | 0 |
 
-> 读这组数字要戴上两副眼镜：①这是**演示版**，检索在进程内、作答是抽取式拼接，没有网络、没有模型推理；②生产版延迟由 Elasticsearch/pgvector 的 RTT 和大模型首 token 时间主导，量级完全不同。**所以这组数据只说明"我的服务端代码在并发下不塌"，不能用来论证生产性能。** 完整四档并发在 `loadtest/loadtest_result.txt`。
+> 读这组数字要戴上两副眼镜：①这是**演示版**，检索在进程内、作答是抽取式拼接，没有网络、没有模型推理；②生产版延迟由 Elasticsearch/pgvector 的 RTT 和大模型首 token 时间主导，量级完全不同。**所以这组数据只说明"服务端代码在并发下不塌"，不能用来论证生产性能。** 完整四档并发在 `loadtest/loadtest_result.txt`。
 
-## 八、目录结构
+## 目录结构
 
 ```
 enterprise-rag/
 ├── demo/
-│   ├── src/com/tanke/rag/       # Json / Text / Index / Answer / Store / Main，共 6 个类，零第三方依赖
+│   ├── src/com/tanke/rag/       # Json / Text / Index / Answer / Store / Main（6 个类，零第三方依赖）
 │   ├── ui/index.html            # 单文件前端（知识库管理 + 对话 + 引用卡片 + 拒答提示）
 │   ├── smoke.py                 # 7 段冒烟，写 smoke_result.txt
 │   ├── probe_scores.py          # 标定拒答阈值用的打分探针
 │   └── data/docs.tsv            # 持久化（首次启动自动生成）
 ├── docs/                        # 生产栈设计：architecture / api / deploy / production
 ├── loadtest/                    # 压测脚本与结果
-└── tools/                       # Windows 一键启动、截图
+└── tools/                       # Windows 一键启动、截图、推送
 ```
 
-## 九、演示版 ↔ 生产版的差距（不藏）
+## 演示版 ↔ 生产版的差距
 
 | 环节 | 演示版 | 生产版 |
 | --- | --- | --- |
@@ -175,7 +221,7 @@ enterprise-rag/
 
 演示版 `/api/stats` 里 `embedding` 字段自报为 `hash-projection-512d`，`retriever` 自报 `bm25+vector+rrf(k=60)`——**诚实标注是刻意设计**，避免被误读成用了真实 embedding 模型。
 
-## 十、路线图
+## 路线图
 
 - [ ] 接入真实 embedding（`bge-m3`）替换哈希投影，保留同一套 `/api/*` 契约
 - [ ] `docker compose` 一键起生产栈，与 `docs/deploy.md` 的 16 项验证清单对齐
@@ -183,9 +229,9 @@ enterprise-rag/
 - [ ] 用 k6 重做压测，分出服务端与客户端开销
 - [ ] 多轮会话与追问改写（生产栈设计里已有，演示版未实现）
 
-## 十一、发布到自己的 GitHub
+## 发布到自己的 GitHub
 
-仓库自带一键推送脚本（会校验 token、自动创建远程仓库、推送并记住凭证）：
+仓库自带一键推送脚本（校验 token、自动创建远程仓库、配置 About、推送并记住凭证）：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\push.ps1
@@ -193,12 +239,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\push.ps1
 
 或 Windows 下直接双击 `tools\push.bat`。需要一个 Personal Access Token（classic 勾 `repo`，或 fine-grained 勾 `Contents: Read and write`）。token 只在这个进程内存里，不写进 `.git/config`；成功后存入 Windows 凭据管理器，清除用 `cmdkey /delete:git:https://github.com`。
 
-脚本同时会把仓库的 About 配好，不用手填：描述取 `tools/gh_bootstrap.py` 里的 `DESCRIPTION`，topics 取 `TOPICS`（`rag` / `hybrid-search` / `bm25` / `rrf` / `vector-search` / `sse` / `java` …）。仓库已存在时也会被纠正，只警告不中断推送。
+脚本同时会把仓库 About 配好，不用手填：描述取 `tools/gh_bootstrap.py` 里的 `DESCRIPTION`，topics 取 `TOPICS`（`rag` / `hybrid-search` / `bm25` / `rrf` / `vector-search` / `sse` / `java` …）。仓库已存在时也会被纠正，只警告不中断推送。
 
-## 十二、许可
+## 许可
 
-MIT。示例语料是虚构的项目自述，不含任何真实业务数据.
+MIT。示例语料是虚构的项目自述，不含任何真实业务数据。
 
 ---
 
-**这个仓库想说明的一件事**：RAG 的难点不在"调用模型"，而在检索质量、融合策略、以及"什么时候该老实说不知道"。前两项能调参，最后一项只能靠想清楚判据——上面第六节的弯路就是代价。
+<p align="center"><sub><b>这个仓库想说明的一件事</b><br/>
+RAG 的难点不在"调用模型"，而在检索质量、融合策略，以及"什么时候该老实说不知道"。<br/>
+前两项能调参，最后一项只能靠想清楚判据——上面那道败掉的覆盖率判据，就是代价。</sub></p>
