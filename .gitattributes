@@ -9,3 +9,4 @@
 # 语言统计：把辅助脚本排除，仓库主语言显示 Java
 *.py linguist-detectable=false
 *.bat linguist-detectable=false
+*.ps1 linguist-detectable=false
