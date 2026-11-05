@@ -313,10 +313,15 @@ async function askOnce(q){
   }
 }
 
+// 拒答截图固定用这个问题：中文只写在这里，避免 .bat 传百分号编码时被 cmd 解析掉
+const REFUSE_Q = "如何训练一个多模态大模型？";
+
 if (params.get("demo") === "1"){
   setTimeout(() => ask(demoQ), 450);
 } else if (params.get("demo") === "static"){
   setTimeout(() => askOnce(demoQ), 450);
+} else if (params.get("demo") === "refuse"){
+  setTimeout(() => askOnce(REFUSE_Q), 450);
 }
 </script>
 </body>

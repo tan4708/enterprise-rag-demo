@@ -25,16 +25,13 @@
 
 ## 先看效果
 
-<table>
-<tr>
-<td width="61%" align="center"><img src="docs/img/ui.png" alt="有证据时作答，答案带引用角标"></td>
-<td width="39%" align="center"><img src="docs/img/refuse.png" alt="证据不足时拒答"></td>
-</tr>
-<tr>
-<td align="center"><sub><b>有证据 → 作答</b>：答案里带 <code>[n]</code> 角标，下方列出对应的引用卡片（标题 + 原文片段）</sub></td>
-<td align="center"><sub><b>证据不足 → 拒答</b>：橙色提示框给出判据 <code>Top1 证据强度 0.546 &lt; 1.800</code>，不编答案</sub></td>
-</tr>
-</table>
+<img src="docs/img/ui.png" alt="有证据时作答，答案带 [n] 引用角标">
+
+<p align="center"><sub><b>有证据 → 作答</b>：答案里带 <code>[n]</code> 角标，下方列出对应的引用卡片（标题 + 原文片段），可逐条核对</sub></p>
+
+<img src="docs/img/refuse.png" alt="证据不足时拒答">
+
+<p align="center"><sub><b>证据不足 → 拒答</b>：橙色提示框直接给出判据 <code>Top1 证据强度 0.546 &lt; 1.800</code>，不编答案</sub></p>
 
 两张图都由 `tools/shot.bat` 对本机真实运行的服务抓取（headless Edge）。先 `tools/run.bat` 起服务，再双击 `tools/shot.bat` 可自行复现。
 
@@ -68,7 +65,7 @@
 
 一句话：**能力应该跑给人看**。生产栈要 Docker、要模型权重、要七套服务，照着文档谁都能写出来，但不是谁都能让一个 RAG 系统在本机 30 秒内起来、并当场演示"该拒答的时候真的拒答"。所以演示版把关键链路自己实现了一遍，参数与生产版严格对齐，方便逐环节对照。
 
-| 速览 | |
+| 项 | 说明 |
 | --- | --- |
 | 运行环境 | Java（JDK 17+），仅标准库，无 Maven / Gradle 依赖 |
 | 代码规模 | 后端 6 个类 956 行；前端 1 个文件 322 行；文档 4 篇 738 行 |

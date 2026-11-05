@@ -16,3 +16,6 @@ Thumbs.db
 .DS_Store
 __pycache__/
 *.pyc
+
+# 本地预览产物
+_preview/
